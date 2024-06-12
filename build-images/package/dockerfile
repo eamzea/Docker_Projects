@@ -1,0 +1,22 @@
+# FROM node:20.14.0-alpine3.20
+# FROM --platform=linux/amd64 node:20.14.0-alpine3.20
+FROM --platform=$BUILDPLATFORM node:20.14.0-alpine3.20
+
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+
+RUN echo "I am running on $BUILDPLATFORM, building for $TARGETPLATFORM" > /log
+
+WORKDIR /app
+
+COPY . .
+
+RUN npm install
+
+RUN npm run test
+
+RUN rm -rf tests && rm -rf node_modules
+
+RUN npm install --prod
+
+CMD [ "node", "app.js" ]
