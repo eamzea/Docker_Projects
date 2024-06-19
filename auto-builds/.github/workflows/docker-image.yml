@@ -1,0 +1,46 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: ['main']
+  pull_request:
+    branches: ['main']
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Git Semantic Version
+        uses: PaulHatch/semantic-version@v5.4.0
+        with:
+          major_pattern: "major:"
+          minor_pattern: "minor:"
+          version_format: "${major}.${minor}.${patch}"
+        id: version
+
+      - name: Docker Login
+        env:
+          DOCKER_USER: ${{secrets.DOCKER_USER}}
+          DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
+        run: |
+          docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+
+      - name: Build Image
+        env:
+          NEW_VERSION: ${{steps.version.outputs.version}}
+        run: |
+          docker build ./auto-builds/ --file ./auto-builds/Dockerfile -t eamzea/docker-graphql:$NEW_VERSION
+          docker build ./auto-builds/ --file ./auto-builds/Dockerfile -t eamzea/docker-graphql
+
+      - name: Push Image
+        env:
+          NEW_VERSION: ${{steps.version.outputs.version}}
+        run: |
+          docker push eamzea/docker-graphql:$NEW_VERSION
+          docker push eamzea/docker-graphql
